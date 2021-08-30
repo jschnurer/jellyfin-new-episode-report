@@ -1,5 +1,5 @@
 {
-  "name": "episodelistupdater",
+  "name": "jellyfin-new-episode-report",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
