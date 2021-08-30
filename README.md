@@ -4,11 +4,15 @@ Connects to a Jellyfin server via the Jellyfin API to read the list of TV shows.
 It will then output a report showing the newest available episode for each TV show (if it's not already in the Jellyfin library), the next episode that will be aired (if there is one upcoming), or that a show has ended or been canceled. Ended/canceled shows will then be ignored on subsequent runs.
 
 # Requirements & Set-up
-- A Jellyfin server.
-- A Jellyfin server API key.
-- Your Jellyfin user id.
-- Your Jellyfin TVShow folder id.
-- A TheMovieDB API key.
+- A **Jellyfin server**.
+- A **Jellyfin API key**.
+  - Go to the Jellyfin server's Admin Dashboard > API Keys, then create one.
+- Your **Jellyfin userId**.
+  - See [Getting User Ids below](#getting-user-ids).
+- Your **Jellyfin TVShow library id**.
+  - See [Getting Library Ids below](#getting-library-ids).
+- A **TheMovieDB API key**.
+  - Go to https://themoviedb.org, create an account, visit Settings > API and request an API key.
 
 Since this is a node script, you must have nodejs installed.
 
@@ -21,7 +25,7 @@ The script reads settings from a required file located at `./local.settings.json
 {
   "movieDbApiKey": "<your TheMovieDb Api key>",
   "jellyfin": {
-    "apiUrl": "<your Jellyfin server url>",
+    "apiUrl": "<your Jellyfin server url, e.g. http://192.168.1.144:8096>",
     "apiKey": "<your Jellyfin API key>",
     "userId": "<your Jellyfin user Id>",
     "tvShowFolderId": "<Your Jellyfin tv show folder Id>"
@@ -49,3 +53,54 @@ Any shows put into `.\ignored-shows.json` will be skipped when processing the Je
   }
 ]
 ```
+
+# Getting Library Ids
+Run `npm run getLibraryIds` in the script folder to connect to the Jellyfin server and output a list of Library names, types, and Ids.
+
+This functionality requires the `local.settings.json` file to exist and to have the following properties already configured:
+
+```
+{
+  ...
+  "jellyfin": {
+    "apiUrl": "<your Jellyfin server url, e.g. http://192.168.1.144:8096>",
+    "apiKey": "<your Jellyfin API key>",
+    "userId": "<your Jellyfin user Id>",
+    ...
+  },
+  ...
+}
+```
+The output will look like this:
+
+```
+"Music" (music): xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+"Movies" (movies): xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+"TV" (tvshows): xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+You can then copy the tv show library's Id into your `local.settings.json` file.
+
+# Getting User Ids
+Run `npm run get-users` in the script folder to connect to the Jellyfin server and output a list of user names and Ids.
+
+This functionality requires the `local.settings.json` file to exist and to have the following properties already configured:
+
+```
+{
+  ...
+  "jellyfin": {
+    "apiUrl": "<your Jellyfin server url, e.g. http://192.168.1.144:8096>",
+    "apiKey": "<your Jellyfin API key>"
+  },
+  ...
+}
+```
+The output will look like this:
+
+```
+"user1": xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+"user2": xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+You can then copy the desired user's Id into your `local.settings.json` file.
