@@ -1,7 +1,7 @@
 const settings = require("./local.settings.json");
 const fetch = require("node-fetch");
 const fs = require("fs");
-const forkObj = require('child_process').fork;
+const spawnObj = require('child_process').spawn;
 const path = require("path");
 
 const outputFn = "./output.txt";
@@ -79,8 +79,11 @@ async function runUpdate() {
     console.log(`Ignored list updated in ${ignoreFn}.`);
   }
 
-  progToOpen = forkObj('C:\\windows\\notepad.exe',
-    [path.resolve(outputFn)]);
+  progToOpen = spawnObj('C:\\windows\\notepad.exe',
+    [path.resolve(outputFn)], {
+      stdio: 'ignore',
+      detached: true,
+    }).unref();
 }
 
 async function getAllJellyfinShows() {
