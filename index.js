@@ -6,6 +6,7 @@ const path = require("path");
 
 const outputFn = "./output.txt";
 const ignoreFn = "./ignored-shows.json";
+const allShowsFn = "./all-shows.json";
 
 let ignoredJellyfinShows = [];
 
@@ -28,10 +29,17 @@ const errors = [];
 // The TMDB ids and names of shows that have permanently ended.
 const endedShows = [];
 
+const allShows = [];
+
 async function runUpdate() {
   const shows = await getAllJellyfinShows();
 
   for (let i = 0; i < shows.length; i++) {
+    allShows.push({
+      id: shows[i].Id,
+      name: shows[i].Name,
+    });
+
     if (ignoredJellyfinShows.some(x => x.id === shows[i].Id)) {
       continue;
     }
@@ -79,6 +87,12 @@ async function runUpdate() {
     console.log(`Ignored list updated in ${ignoreFn}.`);
   }
 
+  fs.writeFileSync(allShowsFn,
+    JSON.stringify(allShows.sort((a, b) => a.name < b.name ? -1 : 1), null, 2),
+    'utf8');
+
+  console.log(`All shows written to ${allShowsFn}.`);
+
   if (settings.spawnWhenFinished.enabled) {
     progToOpen = spawnObj(settings.spawnWhenFinished.program,
       [path.resolve(outputFn)], {
@@ -86,6 +100,7 @@ async function runUpdate() {
       detached: true,
     }).unref();
   }
+
 }
 
 async function getAllJellyfinShows() {

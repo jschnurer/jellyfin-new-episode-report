@@ -32,7 +32,7 @@ The script reads settings from a file located at `./local.settings.json`. It mus
 ```
 
 # Running
-Simply clone the entire repo and run `npm start` at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. Any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`.
+Simply clone the entire repo and run `npm start` at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. Any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`. Additionally, the entire list of show Id/Names will be outputted to `./all-shows.json` for the user to view.
 
 Once completed, if the `local.settings.json` file has `spawnWhenFinished.enabled` == true, it will spawn a child process to the program specified in `spawnWhenFinished.program` and pass the `./output.txt` file in as a parameter. On Windows, you could set this to `C:\\Windows\\notepad.exe` to have it auto-open the outputted report.
 
