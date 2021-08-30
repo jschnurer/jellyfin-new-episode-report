@@ -1,7 +1,7 @@
 {
   "name": "jellyfin-new-episode-report",
   "version": "1.0.0",
-  "description": "",
+  "description": "Connects to a jellyfin server api & TheMovieDB to output a new episode report.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
