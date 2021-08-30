@@ -38,7 +38,7 @@ The script reads settings from a required file located at `./local.settings.json
 ```
 
 # Running
-Simply clone the entire repo and run `npm start` at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. Any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`. Additionally, the entire list of show Id/Names will be outputted to `./all-shows.json` for the user to view.
+Simply clone the entire repo and run `npm start` (or `node .\index.js`) at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. Any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`. Additionally, the entire list of show Id/Names will be outputted to `./all-shows.json` for the user to view.
 
 Once completed, if the `local.settings.json` file has `spawnWhenFinished.enabled` == true, it will spawn a child process to the program specified in `spawnWhenFinished.program` and pass the `./output.txt` file in as a parameter. On Windows, you could set this to `C:\\Windows\\notepad.exe` to have it auto-open the outputted report.
 
@@ -55,7 +55,7 @@ Any shows put into `.\ignored-shows.json` will be skipped when processing the Je
 ```
 
 # Getting Library Ids
-Run `npm run getLibraryIds` in the script folder to connect to the Jellyfin server and output a list of Library names, types, and Ids.
+Run `npm run get-library` (or `node .\getLibraries.js`) in the script folder to connect to the Jellyfin server and output a list of Library names, types, and Ids.
 
 This functionality requires the `local.settings.json` file to exist and to have the following properties already configured:
 
@@ -82,7 +82,7 @@ The output will look like this:
 You can then copy the tv show library's Id into your `local.settings.json` file.
 
 # Getting User Ids
-Run `npm run get-users` in the script folder to connect to the Jellyfin server and output a list of user names and Ids.
+Run `npm run get-users` (or `node .\getUsers.js`) in the script folder to connect to the Jellyfin server and output a list of user names and Ids.
 
 This functionality requires the `local.settings.json` file to exist and to have the following properties already configured:
 
