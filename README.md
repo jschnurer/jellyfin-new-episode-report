@@ -1,5 +1,5 @@
-# episode-updater
-Connects to a Jellyfin server via its API to read a list of TV shows. Then, for each TV show, it will retrieve the latest episode info from TheMovieDB.
+# jellyfin-new-episode-report
+Connects to a Jellyfin server via the Jellyfin API to read the list of TV shows. Then, for each TV show, it will retrieve the latest & upcoming episode info from TheMovieDB.
 
 It will then output a report showing the newest available episode for each TV show (if it's not already in the Jellyfin library), the next episode that will be aired (if there is one upcoming), or that a show has ended or been canceled. Ended/canceled shows will then be ignored on subsequent runs.
 
@@ -10,7 +10,7 @@ It will then output a report showing the newest available episode for each TV sh
 - Your Jellyfin TVShow folder id.
 - A TheMovieDB API key.
 
-Since this is a node script, you must have node installed.
+Since this is a node script, you must have nodejs installed.
 
 # local.settings.json
 The script reads settings from a file located at `./local.settings.json`. It must have the following schema:
