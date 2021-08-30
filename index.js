@@ -15,7 +15,7 @@ if (fs.existsSync(ignoreFn)) {
 }
 
 const jUrl = settings.jellyfin.apiUrl;
-const jUserId = settings.jellyfin.justinUserId;
+const jUserId = settings.jellyfin.userId;
 const jKey = settings.jellyfin.apiKey;
 const jTvId = settings.jellyfin.tvShowFolderId;
 
