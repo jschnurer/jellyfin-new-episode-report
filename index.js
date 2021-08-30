@@ -79,11 +79,13 @@ async function runUpdate() {
     console.log(`Ignored list updated in ${ignoreFn}.`);
   }
 
-  progToOpen = spawnObj('C:\\windows\\notepad.exe',
-    [path.resolve(outputFn)], {
+  if (settings.spawnWhenFinished.enabled) {
+    progToOpen = spawnObj(settings.spawnWhenFinished.program,
+      [path.resolve(outputFn)], {
       stdio: 'ignore',
       detached: true,
     }).unref();
+  }
 }
 
 async function getAllJellyfinShows() {
