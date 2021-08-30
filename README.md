@@ -3,7 +3,7 @@ Connects to a Jellyfin server via the Jellyfin API to read the list of TV shows.
 
 It will then output a report showing the newest available episode for each TV show (if it's not already in the Jellyfin library), the next episode that will be aired (if there is one upcoming), or that a show has ended or been canceled. Ended/canceled shows will then be ignored on subsequent runs.
 
-# Requirements
+# Requirements & Set-up
 - A Jellyfin server.
 - A Jellyfin server API key.
 - Your Jellyfin user id.
@@ -12,8 +12,10 @@ It will then output a report showing the newest available episode for each TV sh
 
 Since this is a node script, you must have nodejs installed.
 
+Navigate to the script's folder and execute `npm install` to install the script dependencies.
+
 # local.settings.json
-The script reads settings from a file located at `./local.settings.json`. It must have the following schema:
+The script reads settings from a required file located at `./local.settings.json`. You must create this json file. It must have the following schema:
 
 ```
 {
