@@ -55,7 +55,7 @@ Any shows put into `.\ignored-shows.json` will be skipped when processing the Je
 ```
 
 # Getting Library Ids
-Run `npm run get-library` (or `node .\getLibraries.js`) in the script folder to connect to the Jellyfin server and output a list of Library names, types, and Ids.
+Run `npm run get-libraries` (or `node .\getLibraries.js`) in the script folder to connect to the Jellyfin server and output a list of Library names, types, and Ids.
 
 This functionality requires the `local.settings.json` file to exist and to have the following properties already configured:
 
