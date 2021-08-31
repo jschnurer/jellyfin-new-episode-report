@@ -43,7 +43,8 @@ async function runUpdate() {
       name: shows[i].Name,
     });
 
-    if (ignoredJellyfinShows.some(x => x.id === shows[i].Id)) {
+    if (settings.ignoreEndedShows
+      && ignoredJellyfinShows.some(x => x.id === shows[i].Id)) {
       continue;
     }
 
@@ -66,7 +67,8 @@ async function runUpdate() {
 
   console.log(`Output written to ${outputFn}.`);
 
-  if (ignoredJellyfinShows.length) {
+  if (ignoredJellyfinShows.length
+    && settings.ignoreEndedShows) {
     // Write out the shows to ignore next time.
     fs.writeFileSync(ignoreFn,
       JSON.stringify(ignoredJellyfinShows.sort((a, b) => a.name < b.name ? -1 : 1), null, 2),
@@ -88,7 +90,6 @@ async function runUpdate() {
       detached: true,
     }).unref();
   }
-
 }
 
 async function getAllJellyfinShows() {
