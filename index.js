@@ -4,7 +4,9 @@ const fs = require("fs");
 const spawnObj = require('child_process').spawn;
 const path = require("path");
 
-const outputFn = "./output.txt";
+const outputFn = settings.outputHtml
+  ? "./output.html"
+  : "./output.txt";
 const ignoreFn = "./ignored-shows.json";
 const allShowsFn = "./all-shows.json";
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -54,29 +56,11 @@ async function runUpdate() {
 
   let output = '';
 
-  // Output new episode info.
-  output += '=== NEW EPISODES ==============================\n';
-  output += newEps.sort(alphaSort).join('\n');
-  output += '\n\n';
-
-  output += '=== UPCOMING EPS ==============================\n';
-  groupBy(nextAirs, "air_date")
-    .sort((a,b) => a.key < b.key ? -1 : 1)
-    .forEach(group => {
-      output += `${formatTMDBDate(group.key)}::\n${group.values
-        .sort((a,b) => a.text < b.text ? -1 : 1)
-        .map(x => '  ' + x.text)
-        .join('\n')}\n\n`;
-    });
-  output += '\n\n';
-
-  output += '=== ENDED SHOWS ===============================\n';
-  output += endedShows.sort(alphaSort).join('\n');
-  output += '\n\n';
-
-  output += '=== ERRORS ====================================\n';
-  output += errors.sort(alphaSort).join('\n');
-  output += '\n\n';
+  if (settings.outputHtml) {
+    output = getOutputHtml();
+  } else {
+    output = getOutputText();
+  }
 
   fs.writeFileSync(outputFn, output, 'utf8');
 
@@ -136,10 +120,18 @@ async function processShow(show) {
     const dbInfo = await getLatestEpFromMovieDb(tmdb);
 
     if (dbInfo.newestEp !== myNewest) {
-      newEps.push(`${show.Name} ${myNewest} -> ${dbInfo.newestEp}`);
+      newEps.push({
+        text: `${show.Name} ${myNewest} → ${dbInfo.newestEp}`,
+        show: show.Name,
+        myNewest,
+        newestEp: dbInfo.newestEp,
+      });
     } else if (dbInfo.nextEp) {
       nextAirs.push({
-        text: `${show.Name} ${myNewest} -> ${dbInfo.nextEp.ep}`,
+        text: `${show.Name} ${myNewest} → ${dbInfo.nextEp.ep}`,
+        show: show.Name,
+        myNewest,
+        nextEp: dbInfo.nextEp.ep,
         air_date: dbInfo.nextEp.air_date,
       });
     } else if (dbInfo.status === 'Ended'
@@ -232,13 +224,97 @@ function groupBy(xs, key) {
     }
     return rv;
   },
-  []);
+    []);
+}
+
+function strToDate(dateStr) {
+  const parts = dateStr.split("-");
+  return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
 function formatTMDBDate(dateStr) {
-  const parts = dateStr.split("-");
-  const date = new Date(parts[0], parts[1] - 1, parts[2]);
-  return `${days[date.getDay()]}, ${dateStr}`;
+  return `${days[strToDate(dateStr).getDay()]}, ${dateStr}`;
+}
+
+function getOutputText() {
+  let output = '';
+
+  output += '=== NEW EPISODES ==============================\n';
+  output += newEps.sort(alphaSort).map(x => x.text).join('\n');
+  output += '\n\n';
+
+  output += '=== UPCOMING EPS ==============================\n';
+  groupBy(nextAirs, "air_date")
+    .sort((a, b) => a.key < b.key ? -1 : 1)
+    .forEach(group => {
+      output += `${formatTMDBDate(group.key)} (${getDaysTil(strToDate(group.key))})::\n${group.values
+        .sort((a, b) => a.text < b.text ? -1 : 1)
+        .map(x => '  ' + x.text)
+        .join('\n')}\n\n`;
+    });
+  output += '\n\n';
+
+  output += '=== ENDED SHOWS ===============================\n';
+  output += endedShows.sort(alphaSort).join('\n');
+  output += '\n\n';
+
+  output += '=== ERRORS ====================================\n';
+  output += errors.sort(alphaSort).join('\n');
+  output += '\n\n';
+
+  return output;
+}
+
+function getOutputHtml() {
+  let output = '';
+
+  if (settings.outputHtmlTemplate
+    && fs.existsSync(settings.outputHtmlTemplate)) {
+    output = fs.readFileSync(settings.outputHtmlTemplate, 'utf8');
+  } else if (fs.existsSync("./outputTemplate.html")) {
+    output = fs.readFileSync("./outputTemplate.html", 'utf8');
+  } else {
+    throw new Error("No output html template defined and could not find ./outputTemplate.html!");
+  }
+
+  output = output.replace(/#NewEpisodes#/g,
+    newEps
+      .sort(alphaSort)
+      .map(x => `<span class="ep-line">
+        <span class="show">${x.show}</span>
+        <span class="ep">${x.myNewest} → ${x.newestEp}</span>
+      </span>`)
+      .join('') || "");
+
+  output = output.replace(/#UpcomingEpisodes#/g,
+    groupBy(nextAirs, "air_date")
+      .sort((a, b) => a.key < b.key ? -1 : 1)
+      .map(group => `<div class="upcoming-eps">
+          <span class="date">${formatTMDBDate(group.key)} (${getDaysTil(strToDate(group.key))})</span>
+          <ul>
+          ${group.values
+          .sort((a, b) => a.show < b.show ? -1 : 1)
+          .map(x => `<li class="ep-line"><span class="show">${x.show}</span> <span class="ep">${x.myNewest} → ${x.nextEp}</span></li>`)
+          .join('')
+        }
+        </ul>
+        </div>`)
+      .join('') || "");
+
+  output = output.replace(/#EndedShows#/g,
+    endedShows.sort(alphaSort).join('<br />') || "");
+
+  output = output.replace(/#Errors#/g,
+    errors.sort(alphaSort).join('<br />') || "");
+
+  return output;
+}
+
+function getDaysTil(date) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const numDays = Math.floor((date - today) / (1000 * 3600 * 24));
+  return `${numDays} day${numDays === 1 ? "" : "s"}`;
 }
 
 runUpdate();
