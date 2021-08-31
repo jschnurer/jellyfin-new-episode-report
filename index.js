@@ -7,6 +7,7 @@ const path = require("path");
 const outputFn = "./output.txt";
 const ignoreFn = "./ignored-shows.json";
 const allShowsFn = "./all-shows.json";
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 let ignoredJellyfinShows = [];
 
@@ -46,10 +47,6 @@ async function runUpdate() {
 
     console.log(`(${i + 1}/${shows.length}) Processing '${shows[i].Name}'.`);
 
-    if (i === 18) {
-      debugger;
-    }
-
     await processShow(shows[i]);
   }
 
@@ -63,7 +60,14 @@ async function runUpdate() {
   output += '\n\n';
 
   output += '=== UPCOMING EPS ==============================\n';
-  output += nextAirs.sort(alphaSort).join('\n');
+  groupBy(nextAirs, "air_date")
+    .sort((a,b) => a.key < b.key ? -1 : 1)
+    .forEach(group => {
+      output += `${formatTMDBDate(group.key)}::\n${group.values
+        .sort((a,b) => a.text < b.text ? -1 : 1)
+        .map(x => '  ' + x.text)
+        .join('\n')}\n\n`;
+    });
   output += '\n\n';
 
   output += '=== ENDED SHOWS ===============================\n';
@@ -134,7 +138,10 @@ async function processShow(show) {
     if (dbInfo.newestEp !== myNewest) {
       newEps.push(`${show.Name} ${myNewest} -> ${dbInfo.newestEp}`);
     } else if (dbInfo.nextEp) {
-      nextAirs.push(`${show.Name} ${myNewest} -> ${dbInfo.nextEp}`);
+      nextAirs.push({
+        text: `${show.Name} ${myNewest} -> ${dbInfo.nextEp.ep}`,
+        air_date: dbInfo.nextEp.air_date,
+      });
     } else if (dbInfo.status === 'Ended'
       || dbInfo.status === 'Canceled') {
       endedShows.push(show.Name);
@@ -196,7 +203,10 @@ async function getLatestEpFromMovieDb(showId) {
   };
 
   if (nextEp) {
-    info.nextEp = `${nextEp.season_number}x${nextEp.episode_number.toString().padStart(2, '0')} on ${nextEp.air_date}`;
+    info.nextEp = {
+      ep: `${nextEp.season_number}x${nextEp.episode_number.toString().padStart(2, '0')}`,
+      air_date: nextEp.air_date,
+    };
   }
 
   return info;
@@ -204,6 +214,31 @@ async function getLatestEpFromMovieDb(showId) {
 
 function alphaSort(a, b) {
   return a < b ? -1 : 1;
+}
+
+function groupBy(xs, key) {
+  return xs.reduce(function (rv, x) {
+    let v = key instanceof Function
+      ? key(x)
+      : x[key];
+    let el = rv.find((r) => r && r.key === v);
+    if (el) {
+      el.values.push(x);
+    } else {
+      rv.push({
+        key: v,
+        values: [x],
+      });
+    }
+    return rv;
+  },
+  []);
+}
+
+function formatTMDBDate(dateStr) {
+  const parts = dateStr.split("-");
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  return `${days[date.getDay()]}, ${dateStr}`;
 }
 
 runUpdate();
