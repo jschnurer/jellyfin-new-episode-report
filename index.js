@@ -206,7 +206,7 @@ async function getLatestEpFromMovieDb(showId) {
 }
 
 function alphaSort(a, b) {
-  return a < b ? -1 : 1;
+  return a.text < b.text ? -1 : 1;
 }
 
 function groupBy(xs, key) {
