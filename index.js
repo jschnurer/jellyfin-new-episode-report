@@ -58,8 +58,10 @@ async function runUpdate() {
 
   if (settings.outputHtml) {
     output = getOutputHtml();
+	output += `<br /><br />Last run: ${new Date()}`;
   } else {
     output = getOutputText();
+	output += `\n\nLast run: ${new Date()}`;
   }
 
   fs.writeFileSync(outputFn, output, 'utf8');
