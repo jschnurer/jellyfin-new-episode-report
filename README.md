@@ -35,19 +35,20 @@ The script reads settings from a required file located at `./local.settings.json
     "program": "<path to program to spawn, e.g. C:\\Windows\\notepad.exe>"
   },
   "outputHtml": <true or false>,
-  "outputHtmlTemplate": "<path to html template>"
+  "outputHtmlTemplate": "<path to html template>",
+  "ignoreEndedShows": <true or false>
 }
 ```
 
 # Running
-Simply clone the entire repo and run `npm start` (or `node .\index.js`) at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. Any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`. Additionally, the entire list of show Id/Names will be outputted to `./all-shows.json` for the user to view.
+Simply clone the entire repo and run `npm start` (or `node .\index.js`) at its location. It will output its progress to the terminal and, when done, output the info to `./output.txt`. If the setting `ignoreEndedShows` is `true`, any TV shows that were ended or canceled will be outputted to `./ignored-shows.json`. Additionally, the entire list of show Id/Names will be outputted to `./all-shows.json` for the user to view.
 
 Once completed, if the `local.settings.json` file has `spawnWhenFinished.enabled` == true, it will spawn a child process to the program specified in `spawnWhenFinished.program` and pass the `./output.txt` file in as a parameter. On Windows, you could set this to `C:\\Windows\\notepad.exe` to have it auto-open the outputted report.
 
 If the option `outputHtml` is set to `true`, the output will instead be `./output.html`. In this case, it will read in `.\outputTemplate.html` and replace `#NewEpisodes#`, `#UpcomingEpisodes#`, `#EndedShows#` and `#Errors#` in the file with some formatted html. If you want to use a different html template, put its path into the settings called `outputHtmlTemplate`.
 
 # Ignoring Shows
-Any shows put into `.\ignored-shows.json` will be skipped when processing the Jellyfin library. If the script detects that the Jellyfin library already has all the episodes for a show, that none are upcoming, AND that its status is 'Canceled' or 'Ended', it will automatically add it to this file to be ignored on subsequent runs.
+Any shows put into `.\ignored-shows.json` will be skipped when processing the Jellyfin library if the setting `ignoreEndedShows` is `true`. If the script detects that the Jellyfin library already has all the episodes for a show, that none are upcoming, AND that its status is 'Canceled' or 'Ended', it will automatically add it to this file to be ignored on subsequent runs.
 
 ```
 [
