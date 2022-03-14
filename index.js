@@ -59,10 +59,10 @@ async function runUpdate() {
 
   if (settings.outputHtml) {
     output = getOutputHtml();
-	output += `<br /><br />Last run: ${new Date()}`;
+    output += `<br /><br />Last run: ${new Date()}`;
   } else {
     output = getOutputText();
-	output += `\n\nLast run: ${new Date()}`;
+    output += `\n\nLast run: ${new Date()}`;
   }
 
   fs.writeFileSync(outputFn, output, 'utf8');
@@ -324,7 +324,10 @@ function log(message) {
   // Log out to the console.
   console.log(message);
   // In case running as a child process, notify the caller.
-  process.send(message);
+  if (process
+    && process.send) {
+    process.send(message);
+  }
 }
 
 runUpdate();
