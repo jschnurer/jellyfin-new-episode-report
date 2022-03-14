@@ -48,12 +48,12 @@ async function runUpdate() {
       continue;
     }
 
-    console.log(`(${i + 1}/${shows.length}) Processing '${shows[i].Name}'.`);
+    log(`(${i + 1}/${shows.length}) Processing '${shows[i].Name}'.`);
 
     await processShow(shows[i]);
   }
 
-  console.log("Finished processing.");
+  log("Finished processing.");
 
   let output = '';
 
@@ -67,7 +67,7 @@ async function runUpdate() {
 
   fs.writeFileSync(outputFn, output, 'utf8');
 
-  console.log(`Output written to ${outputFn}.`);
+  log(`Output written to ${outputFn}.`);
 
   if (ignoredJellyfinShows.length
     && settings.ignoreEndedShows) {
@@ -76,14 +76,14 @@ async function runUpdate() {
       JSON.stringify(ignoredJellyfinShows.sort((a, b) => a.name < b.name ? -1 : 1), null, 2),
       'utf8')
 
-    console.log(`Ignored list updated in ${ignoreFn}.`);
+    log(`Ignored list updated in ${ignoreFn}.`);
   }
 
   fs.writeFileSync(allShowsFn,
     JSON.stringify(allShows.sort((a, b) => a.name < b.name ? -1 : 1), null, 2),
     'utf8');
 
-  console.log(`All shows written to ${allShowsFn}.`);
+  log(`All shows written to ${allShowsFn}.`);
 
   if (settings.spawnWhenFinished.enabled) {
     progToOpen = spawnObj(settings.spawnWhenFinished.program,
@@ -320,4 +320,12 @@ function getDaysTil(date) {
   return `${numDays} day${numDays === 1 ? "" : "s"}`;
 }
 
+function log(message) {
+  // Log out to the console.
+  console.log(message);
+  // In case running as a child process, notify the caller.
+  process.send(message);
+}
+
 runUpdate();
+
