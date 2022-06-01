@@ -101,6 +101,10 @@ async function getAllJellyfinShows() {
 
 async function processShow(show) {
   const latestEp = await getNewestEpisode(show.Id);
+  if (!latestEp) {
+    return;
+  }
+
   const myNewest = latestEp
     ? latestEp.shorthand
     : '';
@@ -152,8 +156,15 @@ async function processShow(show) {
 }
 
 async function getNewestEpisode(showId) {
-  const resp = await fetch(`${jUrl}/shows/${showId}/episodes?api_key=${jKey}&userid=${jUserId}&fields=path`);
-  const json = await resp.json();
+  let json = "";
+  try {
+    const resp = await fetch(`${jUrl}/shows/${showId}/episodes?api_key=${jKey}&userid=${jUserId}&fields=path`);
+    json = await resp.json();
+  } catch (err) {
+    log(`ERR - ${err}`);
+    errors.push(`${showId} threw an error when contacting the Jellyfin api.`);
+    return;
+  }
 
   const eps = json.Items
     .map(x => ({
@@ -161,7 +172,7 @@ async function getNewestEpisode(showId) {
       episode: x.IndexNumber,
       name: x.Name,
       path: x.Path,
-      shorthand: `${x.ParentIndexNumber}x${x.IndexNumber.toString().padStart(2, '0')}`,
+      shorthand: `S${x.ParentIndexNumber.toString().padStart(2, '0')}E${x.IndexNumber.toString().padStart(2, '0')}`,
     })).sort((a, b) => {
       if (a.season < b.season) {
         return -1;
@@ -194,12 +205,12 @@ async function getLatestEpFromMovieDb(showId) {
 
   const info = {
     status,
-    newestEp: `${newestEp.season_number}x${newestEp.episode_number.toString().padStart(2, '0')}`,
+    newestEp: `S${newestEp.season_number.toString().padStart(2, '0')}E${newestEp.episode_number.toString().padStart(2, '0')}`,
   };
 
   if (nextEp) {
     info.nextEp = {
-      ep: `${nextEp.season_number}x${nextEp.episode_number.toString().padStart(2, '0')}`,
+      ep: `S${nextEp.season_number.toString().padStart(2, '0')}E${nextEp.episode_number.toString().padStart(2, '0')}`,
       air_date: nextEp.air_date,
     };
   }
@@ -285,7 +296,10 @@ function getOutputHtml() {
       .sort(alphaSort)
       .map(x => `<span class="ep-line">
         <span class="show">${x.show}</span>
-        <span class="ep">${x.myNewest} → ${x.newestEp}</span>
+        <span class="ep">${x.myNewest} → ${settings.linkTo
+          ? `<a href="${settings.linkTo.replace("%s", `${x.show} ${x.newestEp}`)}">${x.newestEp}</a>`
+          : `${x.newestEp}`
+        }</span>
       </span>`)
       .join('') || "");
 

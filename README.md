@@ -34,6 +34,7 @@ The script reads settings from a required file located at `./local.settings.json
     "enabled": <true or false>,
     "program": "<path to program to spawn, e.g. C:\\Windows\\notepad.exe>"
   },
+  "linkTo": "<link for the new episode>",
   "outputHtml": <true or false>,
   "outputHtmlTemplate": "<path to html template>",
   "ignoreEndedShows": <true or false>
