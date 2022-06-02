@@ -311,7 +311,7 @@ function getOutputHtml() {
           <ul>
           ${group.values
           .sort((a, b) => a.show < b.show ? -1 : 1)
-          .map(x => `<li class="ep-line"><span class="show">${x.show}</span> <span class="ep">${x.myNewest} → ${x.nextEp}</span></li>`)
+          .map(x => `<li class="ep-line"><span class="show">${x.show}</span> <span class="ep">${x.myNewest} → <a href="${settings.linkTo.replace("%s", `${x.show} ${x.nextEp}`)}">${x.nextEp}</a></span></li>`)
           .join('')
         }
         </ul>
