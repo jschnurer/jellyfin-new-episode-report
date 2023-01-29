@@ -172,7 +172,7 @@ async function getNewestEpisode(showId) {
       episode: x.IndexNumber,
       name: x.Name,
       path: x.Path,
-      shorthand: `S${x.ParentIndexNumber.toString().padStart(2, '0')}E${x.IndexNumber.toString().padStart(2, '0')}`,
+      shorthand: `S${x.ParentIndexNumber.toString().padStart(2, '0')}E${(x.IndexNumber?.toString().padStart(2, '0')) || "??"}`,
     })).sort((a, b) => {
       if (a.season < b.season) {
         return -1;
