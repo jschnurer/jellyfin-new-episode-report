@@ -61,7 +61,8 @@ async function runUpdate() {
 }
 
 async function processAllShows() {
-  const shows = await jellyfinUtils.getAllJellyfinShows();
+  let shows = await jellyfinUtils.getAllJellyfinShows();
+  shows = shows.sort((a, b) => a.Name < b.Name ? -1 : 1);
 
   let showsToProcess = [];
 
