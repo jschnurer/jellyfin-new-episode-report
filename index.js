@@ -1,10 +1,11 @@
-const settings = require("./local.settings.json");
-const fetch = require("node-fetch");
 const fs = require("fs");
 const spawnObj = require('child_process').spawn;
 const path = require("path");
+const jellyfinUtils = require("./jellyfinUtils.js");
+const movieDbUtils = require("./movieDbUtils.js");
+const settings = require("./local.settings.json");
 
-const outputFn = settings.outputHtml
+const outputFilename = settings.outputHtml
   ? "./output.html"
   : "./output.txt";
 const ignoreFn = "./ignored-shows.json";
@@ -18,11 +19,6 @@ if (fs.existsSync(ignoreFn)) {
   ignoredJellyfinShows = JSON.parse(ignoredJson);
 }
 
-const jUrl = settings.jellyfin.apiUrl;
-const jUserId = settings.jellyfin.userId;
-const jKey = settings.jellyfin.apiKey;
-const jTvId = settings.jellyfin.tvShowFolderId;
-
 // New episode info.
 const newEps = [];
 // Next episode info for shows that I have up-to-date.
@@ -35,39 +31,9 @@ const endedShows = [];
 const allShows = [];
 
 async function runUpdate() {
-  const shows = await getAllJellyfinShows();
+  await processAllShows();
 
-  for (let i = 0; i < shows.length; i++) {
-    allShows.push({
-      id: shows[i].Id,
-      name: shows[i].Name,
-    });
-
-    if (settings.ignoreEndedShows
-      && ignoredJellyfinShows.some(x => x.id === shows[i].Id)) {
-      continue;
-    }
-
-    log(`(${i + 1}/${shows.length}) Processing '${shows[i].Name}'.`);
-
-    await processShow(shows[i]);
-  }
-
-  log("Finished processing.");
-
-  let output = '';
-
-  if (settings.outputHtml) {
-    output = getOutputHtml();
-    output += `<br /><br />Last run: ${new Date()}`;
-  } else {
-    output = getOutputText();
-    output += `\n\nLast run: ${new Date()}`;
-  }
-
-  fs.writeFileSync(outputFn, output, 'utf8');
-
-  log(`Output written to ${outputFn}.`);
+  writeOutput();
 
   if (ignoredJellyfinShows.length
     && settings.ignoreEndedShows) {
@@ -87,20 +53,50 @@ async function runUpdate() {
 
   if (settings.spawnWhenFinished.enabled) {
     progToOpen = spawnObj(settings.spawnWhenFinished.program,
-      [path.resolve(outputFn)], {
+      [path.resolve(outputFilename)], {
       stdio: 'ignore',
       detached: true,
     }).unref();
   }
 }
 
-async function getAllJellyfinShows() {
-  const resp = await fetch(`${jUrl}/users/${jUserId}/items/?fields=ProviderIds&parentid=${jTvId}&api_key=${jKey}`);
-  return (await resp.json()).Items;
+async function processAllShows() {
+  const shows = await jellyfinUtils.getAllJellyfinShows();
+
+  let showsToProcess = [];
+
+  for (let i = 0; i < shows.length; i++) {
+    allShows.push({
+      id: shows[i].Id,
+      name: shows[i].Name,
+    });
+
+    if (settings.ignoreEndedShows
+      && ignoredJellyfinShows.some(x => x.id === shows[i].Id)) {
+      // Ignore this show. (Skip it.)
+      continue;
+    }
+
+    showsToProcess.push(shows[i]);
+  }
+
+  log(`Processing ${showsToProcess.length} show(s). ${allShows.length - showsToProcess.length} show(s) ignored.`);
+
+  for (let i = 0; i < showsToProcess.length; i++) {
+    log(`(${i + 1}/${showsToProcess.length}) Processing '${showsToProcess[i].Name}'.`);
+    await processShow(showsToProcess[i]);
+
+    if (i === 9) {
+      // TODO: REMOVE DEBUG CODE HERE!
+      break;
+    }
+  }
+
+  log("Finished processing.");
 }
 
 async function processShow(show) {
-  const latestEp = await getNewestEpisode(show.Id);
+  const latestEp = await jellyfinUtils.getNewestEpisode(show.Id);
   if (!latestEp) {
     return;
   }
@@ -124,10 +120,11 @@ async function processShow(show) {
   }
 
   try {
-    const dbInfo = await getLatestEpFromMovieDb(tmdb);
+    const dbInfo = await movieDbUtils.getLatestEpFromMovieDb(tmdb);
 
     if (dbInfo.newestEp !== myNewest) {
       newEps.push({
+        jellyfinId: show.Id,
         text: `${show.Name} ${myNewest} → ${dbInfo.newestEp}`,
         show: show.Name,
         myNewest,
@@ -135,6 +132,7 @@ async function processShow(show) {
       });
     } else if (dbInfo.nextEp) {
       nextAirs.push({
+        jellyfinId: show.Id,
         text: `${show.Name} ${myNewest} → ${dbInfo.nextEp.ep}`,
         show: show.Name,
         myNewest,
@@ -143,10 +141,15 @@ async function processShow(show) {
       });
     } else if (dbInfo.status === 'Ended'
       || dbInfo.status === 'Canceled') {
-      endedShows.push(show.Name);
+      endedShows.push({
+        jellyfinId: show.Id,
+        text: show.Name,
+        show: show.Name,
+      });
       ignoredJellyfinShows.push({
         name: show.Name,
         id: show.Id,
+        jellyfinId: show.Id,
       });
     }
 
@@ -155,70 +158,7 @@ async function processShow(show) {
   }
 }
 
-async function getNewestEpisode(showId) {
-  let json = "";
-  try {
-    const resp = await fetch(`${jUrl}/shows/${showId}/episodes?api_key=${jKey}&userid=${jUserId}&fields=path`);
-    json = await resp.json();
-  } catch (err) {
-    log(`ERR - ${err}`);
-    errors.push(`${showId} threw an error when contacting the Jellyfin api.`);
-    return;
-  }
-
-  const eps = json.Items
-    .map(x => ({
-      season: x.ParentIndexNumber,
-      episode: x.IndexNumber,
-      name: x.Name,
-      path: x.Path,
-      shorthand: `S${x.ParentIndexNumber.toString().padStart(2, '0')}E${(x.IndexNumber?.toString().padStart(2, '0')) || "??"}`,
-    })).sort((a, b) => {
-      if (a.season < b.season) {
-        return -1;
-      } else if (a.season > b.season) {
-        return 1;
-      }
-
-      return a.episode < b.episode
-        ? -1
-        : 1;
-    });
-
-  if (eps.length) {
-    return eps[eps.length - 1];
-  }
-
-  return null;
-}
-
-async function getLatestEpFromMovieDb(showId) {
-  const result = await fetch(`https://api.themoviedb.org/3/tv/${showId}?api_key=${settings.movieDbApiKey}`);
-  const data = await result.json();
-  const newestEp = data.last_episode_to_air;
-  const nextEp = data.next_episode_to_air;
-  const status = data.status;
-
-  if (!newestEp) {
-    return null;
-  }
-
-  const info = {
-    status,
-    newestEp: `S${newestEp.season_number.toString().padStart(2, '0')}E${newestEp.episode_number.toString().padStart(2, '0')}`,
-  };
-
-  if (nextEp) {
-    info.nextEp = {
-      ep: `S${nextEp.season_number.toString().padStart(2, '0')}E${nextEp.episode_number.toString().padStart(2, '0')}`,
-      air_date: nextEp.air_date,
-    };
-  }
-
-  return info;
-}
-
-function alphaSort(a, b) {
+function sortByTextProp(a, b) {
   return a.text < b.text ? -1 : 1;
 }
 
@@ -250,11 +190,29 @@ function formatTMDBDate(dateStr) {
   return `${days[strToDate(dateStr).getDay()]}, ${dateStr}`;
 }
 
+function writeOutput() {
+  let output = '';
+
+  if (settings.outputHtml) {
+    output = getOutputHtml();
+    output += `<br /><br />Last run: ${new Date()}`;
+  } else {
+    output = getOutputText();
+    output += `\n\nLast run: ${new Date()}`;
+  }
+
+  fs.writeFileSync(outputFilename, output, 'utf8');
+
+  log(`Output written to ${outputFilename}.`);
+
+  writeOutputJson();
+}
+
 function getOutputText() {
   let output = '';
 
   output += '=== NEW EPISODES ==============================\n';
-  output += newEps.sort(alphaSort).map(x => x.text).join('\n');
+  output += newEps.sort(sortByTextProp).map(x => x.text).join('\n');
   output += '\n\n';
 
   output += '=== UPCOMING EPS ==============================\n';
@@ -269,11 +227,11 @@ function getOutputText() {
   output += '\n\n';
 
   output += '=== ENDED SHOWS ===============================\n';
-  output += endedShows.sort(alphaSort).join('\n');
+  output += endedShows.sort(sortByTextProp).map(x => x.text).join('\n');
   output += '\n\n';
 
   output += '=== ERRORS ====================================\n';
-  output += errors.sort(alphaSort).join('\n');
+  output += errors.sort(sortByTextProp).join('\n');
   output += '\n\n';
 
   return output;
@@ -293,7 +251,7 @@ function getOutputHtml() {
 
   output = output.replace(/#NewEpisodes#/g,
     newEps
-      .sort(alphaSort)
+      .sort(sortByTextProp)
       .map(x => `<span class="ep-line">
         <span class="show">${x.show}</span>
         <span class="ep">${x.myNewest} → ${settings.linkTo
@@ -319,12 +277,55 @@ function getOutputHtml() {
       .join('') || "");
 
   output = output.replace(/#EndedShows#/g,
-    endedShows.sort(alphaSort).join('<br />') || "");
+    endedShows.sort(sortByTextProp).map(x => x.text).join('<br />') || "");
 
   output = output.replace(/#Errors#/g,
-    errors.sort(alphaSort).join('<br />') || "");
+    errors.sort(sortByTextProp).join('<br />') || "");
 
   return output;
+}
+
+function writeOutputJson() {
+  let outputShows = newEps.map(x => ({
+    jellyfinId: x.jellyfinId,
+    show: x.show,
+    jellyfinLatestEpisode: x.myNewest,
+    availableEpisode: x.newestEp,
+    upcomingEpisode: null,
+    upcomingEpisodeAirDate: null,
+    status: "available",
+  })).concat(nextAirs.map(x => ({
+    jellyfinId: x.jellyfinId,
+    show: x.show,
+    jellyfinLatestEpisode: x.myNewest,
+    availableEpisode: null,
+    upcomingEpisode: x.nextEp,
+    upcomingEpisodeAirDate: x.air_date,
+    status: "upcoming",
+  }))).concat(endedShows.map(x => ({
+    jellyfinId: x.jellyfinId,
+    show: x.show,
+    jellyfinLatestEpisode: null,
+    availableEpisode: null,
+    upcomingEpisode: null,
+    upcomingEpisodeAirDate: null,
+    status: "ended",
+  }))).concat(ignoredJellyfinShows.map(x => ({
+    jellyfinId: x.id,
+    show: x.name,
+    jellyfinLatestEpisode: null,
+    availableEpisode: null,
+    upcomingEpisode: null,
+    upcomingEpisodeAirDate: null,
+    status: "ignored",
+  })));
+
+  fs.writeFileSync("./output.json",
+    JSON.stringify({
+      shows: outputShows,
+      lastRunErrors: errors,
+    }, null, 2),
+    "utf8");
 }
 
 function getDaysTil(date) {
@@ -345,4 +346,3 @@ function log(message) {
 }
 
 runUpdate();
-

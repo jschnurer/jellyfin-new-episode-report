@@ -48,6 +48,8 @@ Once completed, if the `local.settings.json` file has `spawnWhenFinished.enabled
 
 If the option `outputHtml` is set to `true`, the output will instead be `./output.html`. In this case, it will read in `.\outputTemplate.html` and replace `#NewEpisodes#`, `#UpcomingEpisodes#`, `#EndedShows#` and `#Errors#` in the file with some formatted html. If you want to use a different html template, put its path into the settings called `outputHtmlTemplate`.
 
+An output of `output.json` is always outputted in addition to any other selected type.
+
 # Ignoring Shows
 Any shows put into `.\ignored-shows.json` will be skipped when processing the Jellyfin library if the setting `ignoreEndedShows` is `true`. If the script detects that the Jellyfin library already has all the episodes for a show, that none are upcoming, AND that its status is 'Canceled' or 'Ended', it will automatically add it to this file to be ignored on subsequent runs.
 

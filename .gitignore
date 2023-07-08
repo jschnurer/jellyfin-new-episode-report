@@ -1,6 +1,5 @@
 /node_modules
 ignored-shows.json
-output.txt
-output.html
+output.*
 local.settings.json
 all-shows.json
