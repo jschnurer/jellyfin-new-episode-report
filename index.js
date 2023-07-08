@@ -319,6 +319,7 @@ function writeOutputJson() {
     JSON.stringify({
       shows: outputShows,
       lastRunErrors: errors,
+      lastRun: new Date(),
     }, null, 2),
     "utf8");
 }
