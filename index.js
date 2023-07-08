@@ -85,11 +85,6 @@ async function processAllShows() {
   for (let i = 0; i < showsToProcess.length; i++) {
     log(`(${i + 1}/${showsToProcess.length}) Processing '${showsToProcess[i].Name}'.`);
     await processShow(showsToProcess[i]);
-
-    if (i === 9) {
-      // TODO: REMOVE DEBUG CODE HERE!
-      break;
-    }
   }
 
   log("Finished processing.");
