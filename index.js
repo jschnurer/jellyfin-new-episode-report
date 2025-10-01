@@ -102,7 +102,7 @@ async function processShow(show) {
     : '';
 
   if (myNewest == '') {
-    errors.push(`${show.Name} doesn't seem to have any episodes in Jellyfin.`);
+    errors.push({ show, error: `${show.Name} doesn't seem to have any episodes in Jellyfin.` });
     return;
   }
 
@@ -111,7 +111,7 @@ async function processShow(show) {
     : null;
 
   if (!tmdb) {
-    errors.push(`${show.Name} doesn't have a TMDB Id.`);
+    errors.push({ show, error: `${show.Name} doesn't have a TMDB Id.` });
     return;
   }
 
@@ -150,7 +150,7 @@ async function processShow(show) {
     }
 
   } catch (err) {
-    errors.push(`${show.Name} failed to get TMDB info: ${err}`);
+    errors.push({ show, error: `${show.Name} failed to get TMDB info: ${err}` });
   }
 }
 
@@ -319,7 +319,15 @@ function writeOutputJson() {
   fs.writeFileSync("./output.json",
     JSON.stringify({
       shows: outputShows,
-      lastRunErrors: errors,
+      lastRunErrors: errors.sort((a, b) => a.show.Name < b.show.Name ? -1 : 1).map(x => ({
+        jellyfinId: x.show.Id,
+        show: x.show.Name,
+        jellyfinLatestEpisode: null,
+        availableEpisode: null,
+        upcomingEpisode: null,
+        upcomingEpisodeAirDate: null,
+        error: x.error,
+      })),
       lastRun: new Date(),
     }, null, 2),
     "utf8");
