@@ -1,1 +1,2 @@
-npm start
+node .
+start "" "%~dp0output.html"
