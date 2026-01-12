@@ -118,6 +118,15 @@ async function processShow(show) {
   try {
     const dbInfo = await movieDbUtils.getLatestEpFromMovieDb(tmdb);
 
+    if (settings.errorWhenAhead) {
+      const isAhead = amIAhead(myNewest, dbInfo.newestEp);
+
+      if (isAhead) {
+        errors.push({ show, error: `${show.Name} is somehow ahead of TMDB (you have ${myNewest}; TMDB has ${dbInfo.newestEp}).` });
+        return;
+      }
+    }
+
     if (dbInfo.newestEp !== myNewest) {
       newEps.push({
         jellyfinId: show.Id,
@@ -227,7 +236,7 @@ function getOutputText() {
   output += '\n\n';
 
   output += '=== ERRORS ====================================\n';
-  output += errors.sort(sortByTextProp).join('\n');
+  output += errors.sort(sortByTextProp).map(x => x.error).join('\n');
   output += '\n\n';
 
   return output;
@@ -276,7 +285,7 @@ function getOutputHtml() {
     endedShows.sort(sortByTextProp).map(x => x.text).join('<br />') || "");
 
   output = output.replace(/#Errors#/g,
-    errors.sort(sortByTextProp).join('<br />') || "");
+    errors.sort(sortByTextProp).map(x => x.error).join('<br />') || "");
 
   return output;
 }
@@ -348,6 +357,33 @@ function log(message) {
     && process.send) {
     process.send(message);
   }
+}
+
+function amIAhead(myNewest, dbNewest) {
+  const myEpMatches = myNewest.match(/S(\d+)E(\d+)/i);
+  const newEpMatches = dbNewest.match(/S(\d+)E(\d+)/i);
+
+  if (myEpMatches?.length
+    && newEpMatches?.length) {
+    const myS = parseInt(myEpMatches[1]);
+    const myE = parseInt(myEpMatches[2]);
+
+    const dbS = parseInt(newEpMatches[1]);
+    const dbE = parseInt(newEpMatches[2]);
+
+    if (myS > dbS) {
+      return true;
+    }
+
+    if (myS === dbS
+      && myE > dbE) {
+      return true;
+    }
+
+    return false;
+  }
+
+  return false;
 }
 
 runUpdate();
